@@ -1,0 +1,158 @@
+═══════════════════════════════════════════════════════════════
+  PASOS PARA CONFIGURAR Y EJECUTAR EL SISTEMA DE INVENTARIO
+═══════════════════════════════════════════════════════════════
+
+PASO 1: CONECTARTE A SQL SERVER EN SSMS
+─────────────────────────────────────────
+1. En el diálogo "Connect to Server" que tienes abierto:
+   - Server name: DESKTOP-TBR0B2F\SQLEXPRESS (ya está configurado)
+   - Authentication: Windows Authentication (ya está seleccionado)
+   - Click en el botón "Connect"
+
+2. Una vez conectado, verás tu servidor en el Object Explorer del lado izquierdo
+
+
+PASO 2: CREAR LA BASE DE DATOS
+────────────────────────────────
+1. En SSMS, haz click en "New Query" (o presiona Ctrl+N)
+
+2. En la ventana de consulta, escribe y ejecuta (F5):
+   
+   IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'InventarioDB')
+   BEGIN
+       CREATE DATABASE InventarioDB;
+   END
+   GO
+
+3. Verifica que se creó correctamente: en el Object Explorer, 
+   expande "Databases" y deberías ver "InventarioDB"
+
+
+PASO 3: GENERAR HASH DE CONTRASEÑA PARA EL USUARIO ADMIN
+──────────────────────────────────────────────────────────
+1. Abre PowerShell o CMD en la carpeta del proyecto
+
+2. Navega a la carpeta backend:
+   cd backend
+
+3. Instala las dependencias (si no lo has hecho):
+   npm install
+
+4. Genera el hash de la contraseña:
+   node src/utils/passwordHelper.js admin123
+
+5. Copia el hash que aparece (será algo como: $2b$10$...)
+
+
+PASO 4: EJECUTAR EL SCRIPT SQL DE INICIALIZACIÓN
+──────────────────────────────────────────────────
+1. En SSMS, haz click derecho en la base de datos "InventarioDB"
+   y selecciona "New Query" (o abre el archivo backend/sql/001_init.sql)
+
+2. IMPORTANTE: Antes de ejecutar, busca esta línea en el script:
+   
+   VALUES ('admin', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', ...
+   
+   Y reemplaza el hash con el que generaste en el PASO 3
+
+3. Asegúrate de estar conectado a la base "InventarioDB" 
+   (selecciónala en el dropdown de arriba)
+
+4. Ejecuta todo el script (F5 o botón Execute)
+
+5. Deberías ver el mensaje: "Base de datos inicializada correctamente"
+
+
+PASO 5: CONFIGURAR EL ARCHIVO .ENV
+───────────────────────────────────
+OPCIÓN A: Si usas Windows Authentication (tu caso actual)
+───────────────────────────────────────────────────────────
+Necesitas habilitar SQL Server Authentication o crear un usuario SQL:
+
+1. En SSMS, haz click derecho en tu servidor (DESKTOP-TBR0B2F\SQLEXPRESS)
+   → Properties → Security
+   → Marca "SQL Server and Windows Authentication mode"
+   → Click OK (necesitarás reiniciar SQL Server)
+
+2. Crea un usuario SQL:
+   - En Security → Logins → New Login
+   - Login name: sa (o inventario_user)
+   - Selecciona "SQL Server authentication"
+   - Password: (elige una contraseña segura)
+   - Desmarca "Enforce password policy" (solo para desarrollo)
+   - Click OK
+
+OPCIÓN B: Usar Windows Authentication (más complejo)
+─────────────────────────────────────────────────────
+Necesitarías modificar el código para usar autenticación integrada.
+
+RECOMENDACIÓN: Usa la OPCIÓN A para desarrollo.
+
+3. Crea el archivo .env en la carpeta backend/ con este contenido:
+
+   DB_HOST=DESKTOP-TBR0B2F\SQLEXPRESS
+   DB_PORT=1433
+   DB_USER=sa
+   DB_PASSWORD=TuContraseñaSQL
+   DB_NAME=InventarioDB
+   JWT_SECRET=mi_secreto_jwt_super_seguro_12345
+   PORT=3000
+
+   (Reemplaza TuContraseñaSQL con la contraseña que creaste)
+
+
+PASO 6: INSTALAR DEPENDENCIAS DEL BACKEND
+──────────────────────────────────────────
+1. En PowerShell/CMD, asegúrate de estar en la carpeta backend:
+   cd backend
+
+2. Instala las dependencias:
+   npm install
+
+
+PASO 7: INICIAR EL SERVIDOR
+────────────────────────────
+1. En la carpeta backend, ejecuta:
+   npm run dev
+
+2. Deberías ver mensajes como:
+   ✅ Conexión a SQL Server establecida correctamente
+   🚀 Servidor corriendo en http://localhost:3000
+
+3. Si hay errores de conexión, verifica:
+   - Que SQL Server esté corriendo
+   - Que las credenciales en .env sean correctas
+   - Que la base de datos InventarioDB exista
+
+
+PASO 8: PROBAR EL SISTEMA
+─────────────────────────
+1. Abre tu navegador y ve a:
+   file:///ruta/completa/a/tu/proyecto/frontend/productos.html
+
+2. O usa un servidor local:
+   - Abre otra terminal
+   - Navega a la carpeta frontend
+   - Ejecuta: npx http-server -p 8080
+   - Abre: http://localhost:8080/productos.html
+
+3. Deberías poder:
+   - Ver la lista de productos (vacía al inicio)
+   - Crear un nuevo producto usando el formulario
+
+
+═══════════════════════════════════════════════════════════════
+  RESUMEN RÁPIDO
+═══════════════════════════════════════════════════════════════
+
+1. Conecta a SSMS → Click "Connect"
+2. Crea la base: CREATE DATABASE InventarioDB;
+3. Genera hash: cd backend && node src/utils/passwordHelper.js admin123
+4. Ejecuta 001_init.sql (reemplaza el hash)
+5. Crea .env con credenciales SQL Server
+6. npm install en backend
+7. npm run dev
+8. Abre frontend/productos.html en el navegador
+
+═══════════════════════════════════════════════════════════════
+

@@ -1,8 +1,17 @@
 const sql = require('mssql');
 
+// Para SQL Server Express con nombre de instancia, usar el formato: SERVIDOR\INSTANCIA
+// Si DB_HOST contiene '\', se asume que incluye el nombre de instancia
+const dbHost = process.env.DB_HOST || 'localhost';
+const dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : null;
+
+// Si el host contiene '\' (instancia nombrada como DESKTOP-TBR0B2F\SQLEXPRESS),
+// usar el formato completo sin especificar puerto
+// Si es solo el host, usar el puerto especificado
 const config = {
-  server: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 1433,
+  server: dbHost, // Puede ser "localhost" o "DESKTOP-TBR0B2F\SQLEXPRESS"
+  // Solo especificar port si NO es una instancia nombrada
+  ...(dbPort && !dbHost.includes('\\') ? { port: dbPort } : {}),
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,

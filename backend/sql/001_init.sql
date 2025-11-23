@@ -169,7 +169,7 @@ IF NOT EXISTS (SELECT * FROM usuarios WHERE username = 'admin')
 BEGIN
     -- IMPORTANTE: Reemplaza el hash con el generado por passwordHelper.js
     INSERT INTO usuarios (username, password_hash, nombre, email, rol)
-    VALUES ('admin', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Administrador', 'admin@inventario.com', 'admin');
+    VALUES ('admin', '$2b$10$X.CRTXvRTsfoDnKrTG1Fde4CbwrfLhraHD.n0NFb2K7FZQxa3RqwW', 'Administrador', 'admin@inventario.com', 'admin');
 END
 GO
 
