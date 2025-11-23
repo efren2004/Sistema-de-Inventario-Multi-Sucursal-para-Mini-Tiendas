@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { getPool, sql } = require('../db/mssql.pool');
+const { getConnection, sql } = require('../db/mssql.pool');
 
 // Login
 router.post('/login', async (req, res) => {
@@ -16,7 +16,7 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    const pool = await getPool();
+    const pool = await getConnection();
     const result = await pool.request()
       .input('username', sql.VarChar(100), username)
       .query('SELECT * FROM usuarios WHERE username = @username AND activo = 1');

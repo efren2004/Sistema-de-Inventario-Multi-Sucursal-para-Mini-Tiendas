@@ -1,8 +1,8 @@
-const { getPool, sql } = require('../db/mssql.pool');
+const { getConnection, sql } = require('../db/mssql.pool');
 
 async function getProducts() {
   try {
-    const pool = await getPool();
+    const pool = await getConnection();
     const result = await pool.request().query(`
       SELECT 
         p.id,
@@ -27,7 +27,7 @@ async function getProducts() {
 
 async function getProductById(id) {
   try {
-    const pool = await getPool();
+    const pool = await getConnection();
     const result = await pool.request()
       .input('id', sql.Int, id)
       .query('SELECT * FROM productos WHERE id = @id AND activo = 1');
@@ -44,7 +44,7 @@ async function getProductById(id) {
 
 async function createProduct(productData) {
   try {
-    const pool = await getPool();
+    const pool = await getConnection();
     const result = await pool.request()
       .input('codigo', sql.VarChar(50), productData.codigo)
       .input('nombre', sql.VarChar(200), productData.nombre)
@@ -67,7 +67,7 @@ async function createProduct(productData) {
 
 async function updateProduct(id, productData) {
   try {
-    const pool = await getPool();
+    const pool = await getConnection();
     const result = await pool.request()
       .input('id', sql.Int, id)
       .input('codigo', sql.VarChar(50), productData.codigo)
@@ -101,7 +101,7 @@ async function updateProduct(id, productData) {
 
 async function deleteProduct(id) {
   try {
-    const pool = await getPool();
+    const pool = await getConnection();
     const result = await pool.request()
       .input('id', sql.Int, id)
       .query(`

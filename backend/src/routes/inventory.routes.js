@@ -5,8 +5,8 @@ const router = express.Router();
 // Ruta básica para inventario (implementar después)
 router.get('/', async (req, res) => {
   try {
-    const { getPool, sql } = require('../db/mssql.pool');
-    const pool = await getPool();
+    const { getConnection, sql } = require('../db/mssql.pool');
+    const pool = await getConnection();
     
     const result = await pool.request().query(`
       SELECT 
