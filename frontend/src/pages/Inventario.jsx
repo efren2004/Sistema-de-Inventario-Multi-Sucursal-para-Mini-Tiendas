@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getInventarioBySucursal, actualizarInventario } from '../api/inventarios';
+import { sseService } from '../api/sse';
 
 const Inventario = () => {
   const { user, isSupervisor } = useAuth();
@@ -12,22 +13,40 @@ const Inventario = () => {
   const [showModal, setShowModal] = useState(false);
   const [itemSeleccionado, setItemSeleccionado] = useState(null);
   const [formData, setFormData] = useState({ tipo: 'entrada', cantidad: '' });
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(new Date());
+  const [sseConectado, setSseConectado] = useState(false);
 
   useEffect(() => {
     cargarInventario();
   }, [sucursalSeleccionada]);
 
-  // Auto-refresh cada 5 segundos
+  // Verificar estado de conexión SSE
   useEffect(() => {
-    if (!autoRefresh) return;
-
     const interval = setInterval(() => {
-      cargarInventario(true);
-    }, 5000);
+      setSseConectado(sseService.isConnected());
+    }, 2000);
 
     return () => clearInterval(interval);
-  }, [sucursalSeleccionada, autoRefresh]);
+  }, []);
+
+  // Suscribirse a eventos SSE
+  useEffect(() => {
+    const handleInventarioActualizado = (data) => {
+      console.log('Inventario.jsx: Evento recibido', data);
+      // Solo actualizar si es la sucursal que estamos viendo
+      if (data.sucursal_id === sucursalSeleccionada) {
+        console.log('Inventario.jsx: Recargando inventario de sucursal', sucursalSeleccionada);
+        cargarInventario(true);
+        setUltimaActualizacion(new Date());
+      }
+    };
+
+    sseService.subscribe('inventario-actualizado', handleInventarioActualizado);
+
+    return () => {
+      sseService.unsubscribe('inventario-actualizado', handleInventarioActualizado);
+    };
+  }, [sucursalSeleccionada]);
 
   const cargarInventario = async (silencioso = false) => {
     try {
@@ -71,7 +90,7 @@ const Inventario = () => {
 
       setSuccess('Inventario actualizado correctamente');
       setShowModal(false);
-      cargarInventario();
+      // SSE se encargará de actualizar automáticamente
     } catch (err) {
       setError(err.error || 'Error al actualizar inventario');
     }
@@ -92,22 +111,23 @@ const Inventario = () => {
           <h1 className="text-3xl font-bold text-gray-800">Inventario</h1>
           
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-                autoRefresh 
-                  ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {autoRefresh ? '🔄 Auto-refresh ON' : '⏸️ Auto-refresh OFF'}
-            </button>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              sseConectado 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {sseConectado ? '🟢 En vivo' : '🔴 Desconectado'}
+            </span>
             
+            <span className="text-xs text-gray-500">
+              Actualizado: {ultimaActualizacion.toLocaleTimeString()}
+            </span>
+
             <button
               onClick={() => cargarInventario()}
               className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition"
             >
-              ↻ Actualizar ahora
+              ↻ Actualizar
             </button>
           </div>
         </div>

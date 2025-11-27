@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getVentasBySucursal } from '../api/ventas';
+import { sseService } from '../api/sse';
 
 const VentasSucursal = () => {
   const { user, isSupervisor } = useAuth();
@@ -8,22 +9,39 @@ const VentasSucursal = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState(user?.sucursal || 1);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(new Date());
+  const [sseConectado, setSseConectado] = useState(false);
 
   useEffect(() => {
     cargarVentas();
   }, [sucursalSeleccionada]);
 
-  // Auto-refresh cada 5 segundos
+  // Verificar estado de conexión SSE
   useEffect(() => {
-    if (!autoRefresh) return;
-
     const interval = setInterval(() => {
-      cargarVentas(true);
-    }, 5000);
+      setSseConectado(sseService.isConnected());
+    }, 2000);
 
     return () => clearInterval(interval);
-  }, [sucursalSeleccionada, autoRefresh]);
+  }, []);
+
+  // Suscribirse a eventos SSE
+  useEffect(() => {
+    const handleVentaRegistrada = (data) => {
+      console.log('VentasSucursal.jsx: Evento recibido', data);
+      if (data.sucursal_id === sucursalSeleccionada) {
+        console.log('VentasSucursal.jsx: Recargando ventas de sucursal', sucursalSeleccionada);
+        cargarVentas(true);
+        setUltimaActualizacion(new Date());
+      }
+    };
+
+    sseService.subscribe('venta-registrada', handleVentaRegistrada);
+
+    return () => {
+      sseService.unsubscribe('venta-registrada', handleVentaRegistrada);
+    };
+  }, [sucursalSeleccionada]);
 
   const cargarVentas = async (silencioso = false) => {
     try {
@@ -59,22 +77,23 @@ const VentasSucursal = () => {
           <h1 className="text-3xl font-bold text-gray-800">Ventas</h1>
           
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-                autoRefresh 
-                  ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {autoRefresh ? '🔄 Auto-refresh ON' : '⏸️ Auto-refresh OFF'}
-            </button>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              sseConectado 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {sseConectado ? '🟢 En vivo' : '🔴 Desconectado'}
+            </span>
             
+            <span className="text-xs text-gray-500">
+              Actualizado: {ultimaActualizacion.toLocaleTimeString()}
+            </span>
+
             <button
               onClick={() => cargarVentas()}
               className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition"
             >
-              ↻ Actualizar ahora
+              ↻ Actualizar
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import { login as loginAPI } from '../api/auth';
+import { sseService } from '../api/sse';
 
 const AuthContext = createContext();
 
@@ -21,6 +22,10 @@ export const AuthProvider = ({ children }) => {
         username: storedUsername
       });
       setToken(storedToken);
+      
+      // Conectar SSE automáticamente si hay sesión activa
+      console.log('AuthContext: Conectando SSE con token existente');
+      sseService.connect(storedToken);
     }
     setLoading(false);
   }, []);
@@ -44,6 +49,10 @@ export const AuthProvider = ({ children }) => {
         username: credentials.username
       });
 
+      // Conectar SSE después del login
+      console.log('AuthContext: Usuario autenticado, conectando SSE');
+      sseService.connect(data.token);
+
       return data;
     } catch (error) {
       throw error;
@@ -51,12 +60,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    console.log('AuthContext: Cerrando sesión, desconectando SSE');
     localStorage.removeItem('token');
     localStorage.removeItem('rol');
     localStorage.removeItem('sucursal');
     localStorage.removeItem('username');
     setToken(null);
     setUser(null);
+    
+    // Desconectar SSE
+    sseService.disconnect();
   };
 
   const isSupervisor = () => user?.rol === 'SUPERVISOR';
