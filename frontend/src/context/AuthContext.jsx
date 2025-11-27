@@ -9,6 +9,9 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
+  // NUEVO → Estado para saber si el sistema usa SSE o Polling
+  const [realtimeMode, setRealtimeMode] = useState("none");
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedRol = localStorage.getItem('rol');
@@ -22,18 +25,23 @@ export const AuthProvider = ({ children }) => {
         username: storedUsername
       });
       setToken(storedToken);
+
+      console.log('AuthContext: Intentando conectar SSE con token existente');
       
-      // Conectar SSE automáticamente si hay sesión activa
-      console.log('AuthContext: Conectando SSE con token existente');
-      sseService.connect(storedToken);
+      // Intentar conectar SSE → si falla, activar polling
+      sseService.connect(storedToken,
+        () => setRealtimeMode("sse"),      // onSuccess
+        () => setRealtimeMode("polling")   // onError fallback
+      );
     }
+
     setLoading(false);
   }, []);
 
   const login = async (credentials) => {
     try {
       const data = await loginAPI(credentials);
-      
+
       localStorage.setItem('token', data.token);
       localStorage.setItem('rol', data.rol);
       localStorage.setItem('username', credentials.username);
@@ -49,9 +57,14 @@ export const AuthProvider = ({ children }) => {
         username: credentials.username
       });
 
-      // Conectar SSE después del login
-      console.log('AuthContext: Usuario autenticado, conectando SSE');
-      sseService.connect(data.token);
+      console.log('AuthContext: Usuario autenticado, intentando conectar SSE');
+
+      // Intentar conectar SSE → fallback Automático
+      sseService.connect(
+        data.token,
+        () => setRealtimeMode("sse"),     // SSE OK
+        () => setRealtimeMode("polling")  // Fallback
+      );
 
       return data;
     } catch (error) {
@@ -61,29 +74,32 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     console.log('AuthContext: Cerrando sesión, desconectando SSE');
+
     localStorage.removeItem('token');
     localStorage.removeItem('rol');
     localStorage.removeItem('sucursal');
     localStorage.removeItem('username');
+
     setToken(null);
     setUser(null);
-    
-    // Desconectar SSE
+
     sseService.disconnect();
+    setRealtimeMode("none");
   };
 
   const isSupervisor = () => user?.rol === 'SUPERVISOR';
   const isEmpleado = () => user?.rol === 'EMPLEADO';
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      token, 
-      login, 
-      logout, 
-      isSupervisor, 
+    <AuthContext.Provider value={{
+      user,
+      token,
+      login,
+      logout,
+      isSupervisor,
       isEmpleado,
-      loading 
+      loading,
+      realtimeMode  // NUEVO
     }}>
       {children}
     </AuthContext.Provider>
@@ -97,3 +113,4 @@ export const useAuth = () => {
   }
   return context;
 };
+ 

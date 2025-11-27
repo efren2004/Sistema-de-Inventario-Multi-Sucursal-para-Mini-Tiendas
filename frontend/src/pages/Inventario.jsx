@@ -15,6 +15,7 @@ const Inventario = () => {
   const [formData, setFormData] = useState({ tipo: 'entrada', cantidad: '' });
   const [ultimaActualizacion, setUltimaActualizacion] = useState(new Date());
   const [sseConectado, setSseConectado] = useState(false);
+  const [modoPollling, setModoPolling] = useState(false);
 
   useEffect(() => {
     cargarInventario();
@@ -24,18 +25,29 @@ const Inventario = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setSseConectado(sseService.isConnected());
+      setModoPolling(sseService.isFallbackMode());
     }, 2000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Suscribirse a eventos SSE
+  // Polling como fallback si SSE no está disponible
+  useEffect(() => {
+    if (!sseService.isFallbackMode()) return;
+
+    console.log('ℹ️ Modo Polling activo (actualizando cada 10 segundos)');
+    const interval = setInterval(() => {
+      cargarInventario(true);
+      setUltimaActualizacion(new Date());
+    }, 10000); // 10 segundos
+
+    return () => clearInterval(interval);
+  }, [sucursalSeleccionada, modoPollling]);
+
+  // Suscribirse a eventos SSE (solo si SSE está disponible)
   useEffect(() => {
     const handleInventarioActualizado = (data) => {
-      console.log('Inventario.jsx: Evento recibido', data);
-      // Solo actualizar si es la sucursal que estamos viendo
       if (data.sucursal_id === sucursalSeleccionada) {
-        console.log('Inventario.jsx: Recargando inventario de sucursal', sucursalSeleccionada);
         cargarInventario(true);
         setUltimaActualizacion(new Date());
       }
@@ -90,7 +102,11 @@ const Inventario = () => {
 
       setSuccess('Inventario actualizado correctamente');
       setShowModal(false);
-      // SSE se encargará de actualizar automáticamente
+      
+      // Si no hay SSE, recargar manualmente
+      if (sseService.isFallbackMode()) {
+        cargarInventario(true);
+      }
     } catch (err) {
       setError(err.error || 'Error al actualizar inventario');
     }
@@ -111,13 +127,19 @@ const Inventario = () => {
           <h1 className="text-3xl font-bold text-gray-800">Inventario</h1>
           
           <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              sseConectado 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-red-100 text-red-700'
-            }`}>
-              {sseConectado ? '🟢 En vivo' : '🔴 Desconectado'}
-            </span>
+            {sseConectado ? (
+              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                🟢 Tiempo Real
+              </span>
+            ) : modoPollling ? (
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                🟡 Auto-actualización (10s)
+              </span>
+            ) : (
+              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                ⚪ Manual
+              </span>
+            )}
             
             <span className="text-xs text-gray-500">
               Actualizado: {ultimaActualizacion.toLocaleTimeString()}
@@ -154,6 +176,12 @@ const Inventario = () => {
       {success && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
           {success}
+        </div>
+      )}
+
+      {modoPollling && !sseConectado && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-4">
+          ℹ️ SSE no disponible. Se actualiza automáticamente cada 10 segundos.
         </div>
       )}
 

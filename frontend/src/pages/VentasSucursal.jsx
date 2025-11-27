@@ -11,6 +11,7 @@ const VentasSucursal = () => {
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState(user?.sucursal || 1);
   const [ultimaActualizacion, setUltimaActualizacion] = useState(new Date());
   const [sseConectado, setSseConectado] = useState(false);
+  const [modoPolling, setModoPolling] = useState(false);
 
   useEffect(() => {
     cargarVentas();
@@ -20,17 +21,29 @@ const VentasSucursal = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setSseConectado(sseService.isConnected());
+      setModoPolling(sseService.isFallbackMode());
     }, 2000);
 
     return () => clearInterval(interval);
   }, []);
 
+  // Polling como fallback si SSE no está disponible
+  useEffect(() => {
+    if (!sseService.isFallbackMode()) return;
+
+    console.log('ℹ️ Modo Polling activo para Ventas (actualizando cada 10 segundos)');
+    const interval = setInterval(() => {
+      cargarVentas(true);
+      setUltimaActualizacion(new Date());
+    }, 10000); // 10 segundos
+
+    return () => clearInterval(interval);
+  }, [sucursalSeleccionada, modoPolling]);
+
   // Suscribirse a eventos SSE
   useEffect(() => {
     const handleVentaRegistrada = (data) => {
-      console.log('VentasSucursal.jsx: Evento recibido', data);
       if (data.sucursal_id === sucursalSeleccionada) {
-        console.log('VentasSucursal.jsx: Recargando ventas de sucursal', sucursalSeleccionada);
         cargarVentas(true);
         setUltimaActualizacion(new Date());
       }
@@ -77,13 +90,19 @@ const VentasSucursal = () => {
           <h1 className="text-3xl font-bold text-gray-800">Ventas</h1>
           
           <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              sseConectado 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-red-100 text-red-700'
-            }`}>
-              {sseConectado ? '🟢 En vivo' : '🔴 Desconectado'}
-            </span>
+            {sseConectado ? (
+              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                🟢 Tiempo Real
+              </span>
+            ) : modoPolling ? (
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                🟡 Auto-actualización (10s)
+              </span>
+            ) : (
+              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                ⚪ Manual
+              </span>
+            )}
             
             <span className="text-xs text-gray-500">
               Actualizado: {ultimaActualizacion.toLocaleTimeString()}
@@ -114,6 +133,12 @@ const VentasSucursal = () => {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
+        </div>
+      )}
+
+      {modoPolling && !sseConectado && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-4">
+          ℹ️ SSE no disponible. Se actualiza automáticamente cada 10 segundos.
         </div>
       )}
 
