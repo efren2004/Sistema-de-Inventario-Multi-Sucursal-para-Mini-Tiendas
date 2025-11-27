@@ -106,7 +106,7 @@
 
     <script src="assets/scripts/api.js"></script>
     <script>
-        const API_BASE = 'http://localhost:3000/api';
+        const API_BASE = 'http://localhost:34384';
 
         // Cargar productos al cargar la página
         document.addEventListener('DOMContentLoaded', () => {
@@ -125,7 +125,7 @@
             productsList.classList.add('hidden');
             
             try {
-                const response = await fetch(`${API_BASE}/products`);
+                const response = await fetch(`${API_BASE}/productos`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -155,7 +155,7 @@
                     errorDiv.classList.remove('hidden');
                 }
             } catch (error) {
-                errorDiv.textContent = 'Error de conexión. Verifica que el servidor esté corriendo en http://localhost:3000';
+                errorDiv.textContent = 'Error de conexión. Verifica que el servidor esté corriendo en http://localhost:34384';
                 errorDiv.classList.remove('hidden');
                 console.error('Error:', error);
             } finally {
@@ -180,7 +180,7 @@
             messageDiv.classList.add('hidden');
             
             try {
-                const response = await fetch(`${API_BASE}/products`, {
+                const response = await fetch(`${API_BASE}/productos`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

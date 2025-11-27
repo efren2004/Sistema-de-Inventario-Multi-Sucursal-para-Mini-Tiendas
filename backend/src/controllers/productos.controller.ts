@@ -19,5 +19,17 @@ export class ProductosController {
       next(error);
     }
   };
+
+  create = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const producto = await this.productosService.create(req.body);
+      res.status(201).json({
+        success: true,
+        data: producto,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 

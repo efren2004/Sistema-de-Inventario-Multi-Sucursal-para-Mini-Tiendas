@@ -116,6 +116,13 @@ export class TransferenciasService {
 
       await queryRunner.commitTransaction();
 
+      // Obtener la transferencia actualizada
+      const transferenciaActualizada = await this.transferenciasRepository.findById(transferenciaId);
+      
+      if (!transferenciaActualizada) {
+        throw new AppError('Error al obtener la transferencia actualizada', 500);
+      }
+
       // Emitir eventos SSE
       sendEvent('transferencia-aprobada', {
         transferenciaId,
@@ -133,7 +140,7 @@ export class TransferenciasService {
         cantidad: inventarioDestino.cantidad,
       });
 
-      return await this.transferenciasRepository.findById(transferenciaId);
+      return transferenciaActualizada;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

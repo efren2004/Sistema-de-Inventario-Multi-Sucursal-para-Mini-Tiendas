@@ -13,9 +13,21 @@ export class InventariosController {
     try {
       const sucursalId = parseInt(req.params.sucursal);
       const inventarios = await this.inventariosService.getBySucursal(sucursalId);
+      
+      // Transformar datos para el frontend
+      const inventariosFormateados = inventarios.map((inv) => ({
+        id: inv.id,
+        producto_id: inv.productoId,
+        nombre_producto: inv.producto?.nombre || 'Sin nombre',
+        stock_actual: parseFloat(inv.cantidad.toString()),
+        stock_minimo: parseFloat(inv.cantidadMinima.toString()),
+        sucursal_id: inv.sucursalId,
+        activo: inv.activo,
+      }));
+
       res.json({
         success: true,
-        data: inventarios,
+        data: inventariosFormateados,
       });
     } catch (error) {
       next(error);

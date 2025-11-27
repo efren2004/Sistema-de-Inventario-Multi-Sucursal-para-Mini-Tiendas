@@ -1,5 +1,5 @@
 // Helper para hacer peticiones a la API con autenticación
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'http://localhost:34384';
 
 async function apiRequest(endpoint, options = {}) {
     const token = localStorage.getItem('token');
@@ -47,41 +47,41 @@ const api = {
     
     // Products
     getProducts: async () => {
-        return await apiRequest('/products');
+        return await apiRequest('/productos');
     },
     
     getProduct: async (id) => {
-        return await apiRequest(`/products/${id}`);
+        return await apiRequest(`/productos/${id}`);
     },
     
     createProduct: async (productData) => {
-        return await apiRequest('/products', {
+        return await apiRequest('/productos', {
             method: 'POST',
             body: JSON.stringify(productData)
         });
     },
     
     updateProduct: async (id, productData) => {
-        return await apiRequest(`/products/${id}`, {
+        return await apiRequest(`/productos/${id}`, {
             method: 'PUT',
             body: JSON.stringify(productData)
         });
     },
     
     deleteProduct: async (id) => {
-        return await apiRequest(`/products/${id}`, {
+        return await apiRequest(`/productos/${id}`, {
             method: 'DELETE'
         });
     },
     
     // Inventory
     getInventory: async () => {
-        return await apiRequest('/inventory');
+        return await apiRequest('/inventarios');
     },
     
     // Transfers
     getTransfers: async () => {
-        return await apiRequest('/transfer');
+        return await apiRequest('/transferencias');
     }
 };
 

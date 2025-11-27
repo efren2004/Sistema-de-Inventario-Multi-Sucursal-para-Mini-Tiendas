@@ -52,7 +52,7 @@
 
     <script src="assets/scripts/api.js"></script>
     <script>
-        const API_BASE = 'http://localhost:3000/api';
+        const API_BASE = 'http://localhost:34384';
 
         // Cargar datos del dashboard
         document.addEventListener('DOMContentLoaded', () => {
@@ -62,7 +62,7 @@
         async function loadDashboardData() {
             try {
                 // Cargar productos
-                const productsRes = await fetch(`${API_BASE}/products`);
+                const productsRes = await fetch(`${API_BASE}/productos`);
                 const productsData = await productsRes.json();
                 
                 if (productsData.success) {
@@ -100,7 +100,7 @@
                 }
 
                 // Cargar inventario
-                const inventoryRes = await fetch(`${API_BASE}/inventory`);
+                const inventoryRes = await fetch(`${API_BASE}/inventarios`);
                 const inventoryData = await inventoryRes.json();
                 
                 if (inventoryData.success) {
@@ -136,7 +136,7 @@
                 }
 
                 // Cargar transferencias
-                const transferRes = await fetch(`${API_BASE}/transfer`);
+                const transferRes = await fetch(`${API_BASE}/transferencias`);
                 const transferData = await transferRes.json();
                 
                 if (transferData.success) {

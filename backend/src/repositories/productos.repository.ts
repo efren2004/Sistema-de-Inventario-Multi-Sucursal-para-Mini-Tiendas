@@ -27,5 +27,9 @@ export class ProductosRepository {
       where: { codigo, activo: true },
     });
   }
+
+  async save(producto: Producto): Promise<Producto> {
+    return await this.repository.save(producto);
+  }
 }
 
